@@ -1,0 +1,21 @@
+# backend (Python)
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
+backend/*.egg-info/
+backend/.pytest_cache/
+
+# frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Claude Code local settings (user-specific, not shared)
+.claude/settings.local.json
