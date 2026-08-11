@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: pay-cop-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      # Render의 관리형 Postgres는 무료 플랜도 카드 인증을 요구해서 대신 Neon(카드 불필요)을
+      # 쓴다. Neon 프로젝트 생성 후 연결 문자열을 Render 대시보드에서 이 값으로 직접 입력한다.
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
