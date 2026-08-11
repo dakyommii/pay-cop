@@ -148,3 +148,35 @@ pytest
 - `test_llm_explainer.py`: LLM 성공/실패 시 폴백 동작
 - `test_payment_recommend_api.py`, `test_e2e_scenarios.py`: `/payment/recommend` 통합 및
   DESIGN.md 시나리오 고정값 회귀 테스트
+
+## 배포
+
+- **Frontend → Vercel**: https://pay-cop.vercel.app (프로덕션, 공개 접근)
+- **Backend → Render**: https://pay-cop.onrender.com (Free 웹서비스, Docker)
+- **DB → Neon**: 카드 인증 없는 서버리스 Postgres
+
+finpath-ai 배포 때와 동일한 조합. Render는 Blueprint(`render.yaml`)가 아니라 "New Web
+Service"로 직접 만들었다 — `render.yaml`은 IaC 문서 성격으로 레포에 남겨두되, 실제로는
+Render 대시보드에서 아래처럼 수동 설정했다:
+
+- Root Directory: `backend`, Dockerfile Path: `Dockerfile` (Root Directory 설정 시 이 값도
+  그 기준 상대경로가 된다 — `backend/Dockerfile`로 남겨두면 `backend/backend`를 찾다가
+  빌드 실패한다)
+- Health Check Path: `/health`
+- 환경변수: `DATABASE_URL`(Neon pooled connection string, `postgresql+psycopg2://` 드라이버
+  접두사로 교체). `OPENAI_API_KEY`는 비워둠 — LLM 미연동 상태에서도 규칙 기반 폴백 문구로
+  정상 동작한다.
+- DB 스키마/시드는 로컬에서 `DATABASE_URL`을 Neon으로 바꿔 `alembic upgrade head` +
+  `python -m scripts.seed` 실행해 미리 채워둠
+
+프론트는 `frontend/`에서 `vercel link` + `vercel env add NEXT_PUBLIC_API_BASE_URL` +
+`vercel --prod`로 배포. `NEXT_PUBLIC_API_BASE_URL`을 Render 백엔드 URL로 지정해야 한다.
+
+배포 중 실제로 만나서 고친 것: Render의 GitHub App이 처음엔 `pay-cop` 저장소에 접근 권한이
+없어서(다른 프로젝트만 연결돼 있었음), GitHub `Settings → Applications → Render → Configure`
+에서 저장소 접근을 추가해야 했다. `backend/app/main.py`의 CORS는 처음부터
+`allow_origin_regex=r"https://pay-cop.*\.vercel\.app"`로 배포 도메인을 허용하게 준비해둬서
+(finpath 때 겪은 CORS 버그를 미리 반영) 별도 수정 없이 바로 붙었다.
+
+브라우저로 카드 등록 → 결제 정보 입력 → AI 추천까지 실제 배포 URL에서 전체 플로우 재현해
+확인 완료 (테스트로 생성한 데이터는 Neon에서 정리함).
