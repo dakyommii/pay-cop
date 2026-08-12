@@ -63,35 +63,42 @@ export default function PaymentPage() {
   };
 
   return (
-    <main style={{ maxWidth: 480, margin: "40px auto", padding: "0 16px", fontFamily: "sans-serif" }}>
-      <p style={{ marginBottom: 16 }}>
+    <main className="page">
+      <nav className="page-nav">
         <Link href="/">← 카드 등록으로</Link>
-      </p>
-      <h1>결제 정보 입력</h1>
+      </nav>
+      <h1 className="page-title">결제 정보 입력</h1>
+      <p className="page-subtitle">매장과 금액을 입력하면 등록된 카드 기준으로 가장 유리한 조합을 추천해드려요.</p>
 
-      {userError && <p style={{ color: "crimson" }}>사용자 초기화 실패: {userError}</p>}
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {userError && <p className="msg-error" style={{ marginBottom: 12 }}>사용자 초기화 실패: {userError}</p>}
+      {error && <p className="msg-error" style={{ marginBottom: 12 }}>{error}</p>}
       {cards.length === 0 && !userError && (
-        <p style={{ color: "#a15c00" }}>
-          등록된 카드가 없습니다. <Link href="/">카드를 먼저 등록</Link>해주세요.
+        <p className="msg-notice" style={{ marginBottom: 12 }}>
+          등록된 카드가 없습니다. <Link href="/" style={{ textDecoration: "underline" }}>카드를 먼저 등록</Link>해주세요.
         </p>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
-        <input
-          placeholder="매장 (예: 올리브영)"
-          value={merchant}
-          onChange={(e) => setMerchant(e.target.value)}
-          required
-        />
-        <input
-          placeholder="업종 (예: 뷰티)"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          required
-        />
-        <label style={{ fontSize: 14 }}>
-          결제 금액
+      <form onSubmit={handleSubmit} className="form">
+        <div className="field">
+          <input
+            type="text"
+            placeholder="매장 (예: 올리브영)"
+            value={merchant}
+            onChange={(e) => setMerchant(e.target.value)}
+            required
+          />
+        </div>
+        <div className="field">
+          <input
+            type="text"
+            placeholder="업종 (예: 뷰티)"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+          />
+        </div>
+        <div className="field">
+          <label className="field-label">결제 금액</label>
           <input
             type="number"
             min={1}
@@ -99,63 +106,51 @@ export default function PaymentPage() {
             onChange={(e) => setAmount(Number(e.target.value))}
             required
           />
-        </label>
+        </div>
 
-        <fieldset style={{ border: "1px solid #ddd", borderRadius: 8, padding: 8 }}>
-          <legend style={{ fontSize: 13 }}>보유 간편결제</legend>
+        <div className="checkbox-group">
           {SIMPLE_PAY_OPTIONS.map((payment) => (
-            <label key={payment} style={{ marginRight: 12, fontSize: 14 }}>
+            <label key={payment} className="checkbox-label">
               <input
                 type="checkbox"
                 checked={selectedPayments.includes(payment)}
                 onChange={() => togglePayment(payment)}
-              />{" "}
+              />
               {payment}
             </label>
           ))}
-        </fieldset>
+        </div>
 
-        <button type="submit" disabled={!userId || loading}>
+        <button type="submit" className="btn-primary" disabled={!userId || loading}>
           {loading ? "분석 중..." : "AI 추천 받기"}
         </button>
       </form>
 
       {result && (
-        <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ border: "2px solid #2f9e44", borderRadius: 8, padding: 12 }}>
-            <h2 style={{ margin: "0 0 8px" }}>AI 추천 결과</h2>
-            <div style={{ fontSize: 20, fontWeight: "bold" }}>
+        <section style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 28 }}>
+          <div className="result-highlight">
+            <div className="result-headline">
               {result.recommendedCard}
               {result.recommendedPayment && ` + ${result.recommendedPayment}`}
             </div>
-            <div style={{ color: "#2f9e44", fontWeight: "bold", marginTop: 4 }}>
-              예상 절약: {result.expectedSaving.toLocaleString()}원
-            </div>
+            <div className="result-saving">예상 절약 {result.expectedSaving.toLocaleString()}원</div>
           </div>
 
           <div>
-            <h3>추천 이유</h3>
-            <p>{result.reason}</p>
+            <h3 className="section-title" style={{ marginTop: 0 }}>추천 이유</h3>
+            <p style={{ fontSize: 14, lineHeight: 1.6 }}>{result.reason}</p>
           </div>
 
           <div>
-            <h3>절약 금액 비교</h3>
+            <h3 className="section-title" style={{ marginTop: 0 }}>절약 금액 비교</h3>
             <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
               {result.candidates.map((c, i) => {
                 const isTop = c.cardName === result.recommendedCard && c.paymentType === result.recommendedPayment;
                 const maxSaving = result.candidates[0]?.expectedSaving || 1;
                 const ratio = maxSaving > 0 ? Math.max(0, c.expectedSaving / maxSaving) : 0;
                 return (
-                  <li
-                    key={i}
-                    style={{
-                      padding: 8,
-                      borderRadius: 6,
-                      background: isTop ? "#ebfbee" : "#f5f5f5",
-                      color: "#1a1a1a",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+                  <li key={i} className={`candidate-row${isTop ? " candidate-row--top" : ""}`}>
+                    <div className="candidate-row-line">
                       <span>
                         {c.cardName}
                         {c.paymentType && ` + ${c.paymentType}`}
@@ -163,13 +158,10 @@ export default function PaymentPage() {
                       </span>
                       <strong>{c.expectedSaving.toLocaleString()}원</strong>
                     </div>
-                    <div style={{ height: 6, background: "#eee", borderRadius: 3, overflow: "hidden", marginTop: 4 }}>
+                    <div className="progress-track">
                       <div
-                        style={{
-                          height: "100%",
-                          width: `${ratio * 100}%`,
-                          background: isTop ? "#2f9e44" : "#adb5bd",
-                        }}
+                        className={`progress-fill${isTop ? "" : " progress-fill--accent"}`}
+                        style={{ width: `${ratio * 100}%` }}
                       />
                     </div>
                   </li>
