@@ -182,6 +182,12 @@ select {
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
+select:disabled {
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-muted);
+  cursor: not-allowed;
+}
+
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;

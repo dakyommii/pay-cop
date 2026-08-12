@@ -8,16 +8,56 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 // 시딩된 PaymentEvent 카탈로그와 일치하는 간편결제 목록 (2단계 seed 데이터 기준).
 const SIMPLE_PAY_OPTIONS = ["네이버페이", "카카오페이", "토스페이"];
 
+// 업종 -> 매장 목록. 업종은 시딩된 Benefit.category와 일치해 카드 혜택이 매칭되고,
+// 올리브영/스타벅스/맥도날드는 매장명 자체가 Benefit·PaymentEvent와도 일치한다.
+const CATEGORY_OPTIONS: { label: string; merchants: string[] }[] = [
+  { label: "뷰티", merchants: ["올리브영", "시코르"] },
+  { label: "편의점", merchants: ["CU", "GS25", "세븐일레븐", "이마트24"] },
+  { label: "카페", merchants: ["스타벅스", "이디야", "투썸플레이스"] },
+  { label: "주유", merchants: ["GS칼텍스", "SK에너지", "현대오일뱅크"] },
+  { label: "온라인쇼핑", merchants: ["쿠팡", "11번가", "G마켓"] },
+  { label: "영화", merchants: ["CGV", "롯데시네마", "메가박스"] },
+  { label: "배달앱", merchants: ["배달의민족", "요기요", "쿠팡이츠"] },
+  { label: "패스트푸드", merchants: ["맥도날드", "버거킹", "롯데리아"] },
+];
+const CUSTOM_OPTION = "__custom__";
+
 export default function PaymentPage() {
   const { userId, error: userError } = useCurrentUser();
   const [cards, setCards] = useState<Card[]>([]);
   const [merchant, setMerchant] = useState("");
   const [category, setCategory] = useState("");
+  const [useCustomCategory, setUseCustomCategory] = useState(false);
+  const [useCustomMerchant, setUseCustomMerchant] = useState(false);
   const [amount, setAmount] = useState<number>(0);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [result, setResult] = useState<RecommendResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const merchantOptions = CATEGORY_OPTIONS.find((c) => c.label === category)?.merchants ?? [];
+
+  const handleCategoryChange = (value: string) => {
+    setMerchant("");
+    setUseCustomMerchant(false);
+    if (value === CUSTOM_OPTION) {
+      setUseCustomCategory(true);
+      setCategory("");
+    } else {
+      setUseCustomCategory(false);
+      setCategory(value);
+    }
+  };
+
+  const handleMerchantChange = (value: string) => {
+    if (value === CUSTOM_OPTION) {
+      setUseCustomMerchant(true);
+      setMerchant("");
+    } else {
+      setUseCustomMerchant(false);
+      setMerchant(value);
+    }
+  };
 
   useEffect(() => {
     if (userId) {
@@ -80,22 +120,69 @@ export default function PaymentPage() {
 
       <form onSubmit={handleSubmit} className="form">
         <div className="field">
-          <input
-            type="text"
-            placeholder="매장 (예: 올리브영)"
-            value={merchant}
-            onChange={(e) => setMerchant(e.target.value)}
+          <select
+            value={useCustomCategory ? CUSTOM_OPTION : category}
+            onChange={(e) => handleCategoryChange(e.target.value)}
             required
-          />
+          >
+            <option value="" disabled>
+              업종 선택
+            </option>
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c.label} value={c.label}>
+                {c.label}
+              </option>
+            ))}
+            <option value={CUSTOM_OPTION}>기타 (직접 입력)</option>
+          </select>
+          {useCustomCategory && (
+            <input
+              type="text"
+              placeholder="업종 입력 (예: 뷰티)"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            />
+          )}
         </div>
         <div className="field">
-          <input
-            type="text"
-            placeholder="업종 (예: 뷰티)"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-          />
+          {useCustomCategory ? (
+            <input
+              type="text"
+              placeholder="매장 입력 (예: 올리브영)"
+              value={merchant}
+              onChange={(e) => setMerchant(e.target.value)}
+              required
+            />
+          ) : (
+            <>
+              <select
+                value={useCustomMerchant ? CUSTOM_OPTION : merchant}
+                onChange={(e) => handleMerchantChange(e.target.value)}
+                disabled={!category}
+                required
+              >
+                <option value="" disabled>
+                  {category ? "매장 선택" : "먼저 업종을 선택하세요"}
+                </option>
+                {merchantOptions.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+                {category && <option value={CUSTOM_OPTION}>기타 (직접 입력)</option>}
+              </select>
+              {useCustomMerchant && (
+                <input
+                  type="text"
+                  placeholder="매장 입력"
+                  value={merchant}
+                  onChange={(e) => setMerchant(e.target.value)}
+                  required
+                />
+              )}
+            </>
+          )}
         </div>
         <div className="field">
           <label className="field-label">결제 금액</label>
