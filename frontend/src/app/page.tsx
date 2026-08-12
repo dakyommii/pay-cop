@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardInput, createCard, listCards, updateCardPerformance } from "@/lib/api";
+import { CARD_CATALOG, CARD_ISSUERS } from "@/lib/cardCatalog";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 
 const emptyForm: CardInput = {
@@ -12,9 +13,6 @@ const emptyForm: CardInput = {
   required_performance: 0,
 };
 
-// 시딩된 Benefit 카탈로그와 일치하는 카드명 (2단계 seed 데이터 기준). 목록에 없는 카드는
-// "직접 입력"으로 등록할 수 있지만, 혜택 매칭은 카탈로그에 있는 카드명에만 걸린다.
-const CARD_NAME_OPTIONS = ["신한카드", "삼성카드", "현대카드"];
 const CUSTOM_CARD_NAME = "__custom__";
 const CARD_TYPE_OPTIONS = ["신용카드", "체크카드"];
 
@@ -82,12 +80,24 @@ export default function Home() {
           <select
             value={useCustomCardName ? CUSTOM_CARD_NAME : form.card_name}
             onChange={(e) => {
-              if (e.target.value === CUSTOM_CARD_NAME) {
+              const value = e.target.value;
+              if (value === CUSTOM_CARD_NAME) {
                 setUseCustomCardName(true);
                 setForm({ ...form, card_name: "" });
+                return;
+              }
+              setUseCustomCardName(false);
+              const catalogEntry = CARD_CATALOG.find((c) => c.name === value);
+              if (catalogEntry) {
+                setForm({
+                  ...form,
+                  card_name: value,
+                  card_type: catalogEntry.cardType,
+                  required_performance: catalogEntry.requiredPerformance,
+                });
               } else {
-                setUseCustomCardName(false);
-                setForm({ ...form, card_name: e.target.value });
+                // 이슈어 단위("신한카드" 등) 선택 — 혜택 매칭용, 실적기준은 자동완성하지 않음
+                setForm({ ...form, card_name: value });
               }
             }}
             required
@@ -95,10 +105,15 @@ export default function Home() {
             <option value="" disabled>
               카드명 선택
             </option>
-            {CARD_NAME_OPTIONS.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
+            {CARD_ISSUERS.map((issuer) => (
+              <optgroup key={issuer} label={issuer}>
+                <option value={issuer}>{issuer} (일반 · 혜택 매칭)</option>
+                {CARD_CATALOG.filter((c) => c.issuer === issuer).map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
             <option value={CUSTOM_CARD_NAME}>직접 입력</option>
           </select>
