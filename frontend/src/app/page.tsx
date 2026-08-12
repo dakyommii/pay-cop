@@ -12,12 +12,19 @@ const emptyForm: CardInput = {
   required_performance: 0,
 };
 
+// 시딩된 Benefit 카탈로그와 일치하는 카드명 (2단계 seed 데이터 기준). 목록에 없는 카드는
+// "직접 입력"으로 등록할 수 있지만, 혜택 매칭은 카탈로그에 있는 카드명에만 걸린다.
+const CARD_NAME_OPTIONS = ["신한카드", "삼성카드", "현대카드"];
+const CUSTOM_CARD_NAME = "__custom__";
+const CARD_TYPE_OPTIONS = ["신용카드", "체크카드"];
+
 export default function Home() {
   const { userId, error: userError } = useCurrentUser();
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<CardInput>(emptyForm);
+  const [useCustomCardName, setUseCustomCardName] = useState(false);
 
   const refresh = async (uid: number) => {
     setLoading(true);
@@ -42,6 +49,7 @@ export default function Home() {
     try {
       await createCard(userId, form);
       setForm(emptyForm);
+      setUseCustomCardName(false);
       await refresh(userId);
     } catch (e) {
       setError((e as Error).message);
@@ -71,22 +79,54 @@ export default function Home() {
 
       <form onSubmit={handleSubmit} className="form">
         <div className="field">
-          <input
-            type="text"
-            placeholder="카드명 (예: 신한카드)"
-            value={form.card_name}
-            onChange={(e) => setForm({ ...form, card_name: e.target.value })}
+          <select
+            value={useCustomCardName ? CUSTOM_CARD_NAME : form.card_name}
+            onChange={(e) => {
+              if (e.target.value === CUSTOM_CARD_NAME) {
+                setUseCustomCardName(true);
+                setForm({ ...form, card_name: "" });
+              } else {
+                setUseCustomCardName(false);
+                setForm({ ...form, card_name: e.target.value });
+              }
+            }}
             required
-          />
+          >
+            <option value="" disabled>
+              카드명 선택
+            </option>
+            {CARD_NAME_OPTIONS.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+            <option value={CUSTOM_CARD_NAME}>직접 입력</option>
+          </select>
+          {useCustomCardName && (
+            <input
+              type="text"
+              placeholder="카드명 입력"
+              value={form.card_name}
+              onChange={(e) => setForm({ ...form, card_name: e.target.value })}
+              required
+            />
+          )}
         </div>
         <div className="field">
-          <input
-            type="text"
-            placeholder="카드 종류 (예: 신용카드)"
+          <select
             value={form.card_type}
             onChange={(e) => setForm({ ...form, card_type: e.target.value })}
             required
-          />
+          >
+            <option value="" disabled>
+              카드 종류 선택
+            </option>
+            {CARD_TYPE_OPTIONS.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <label className="field-label">이번 달 실적</label>
