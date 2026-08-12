@@ -15,7 +15,9 @@ from app.services.rule_engine import Candidate
 SYSTEM_PROMPT = (
     "너는 이미 계산이 끝난 카드/간편결제 추천 결과를 사용자에게 설명하는 어시스턴트야. "
     "할인율이나 절약 금액을 새로 계산하거나 추측하지 말고, 주어진 수치만 사용해서 "
-    "친근한 한국어 문장 2~3개로 추천 이유를 설명해. 대안이 주어지면 간단히 비교해줘."
+    "친근한 한국어 문장 2~3개로 추천 이유를 설명해. 대안이 주어지면 간단히 비교해줘. "
+    "추천 조합의 총 예상 절약이 0원이면, 마치 유리한 카드가 있는 것처럼 포장하지 말고 "
+    "'이번 결제에는 등록된 카드·간편결제로 받을 수 있는 혜택이 없다'는 사실을 있는 그대로 말해줘."
 )
 
 
@@ -62,6 +64,12 @@ def _call_llm(user_prompt: str) -> str:
 
 
 def _fallback_reason(merchant: str, top: Candidate) -> str:
+    if top.total_saving <= 0:
+        sentences = [f"이번 {merchant} 결제에는 등록된 카드나 간편결제로 받을 수 있는 혜택이 없습니다."]
+        if top.benefit_category and not top.performance_met:
+            sentences.append(f"{top.card_name}에 {merchant} 업종 할인이 있지만 이번 달 실적 조건을 채우지 못해 적용되지 않았습니다.")
+        return " ".join(sentences)
+
     sentences = [f"현재 결제에서는 {top.card_name}가 가장 유리합니다."]
 
     if top.discount_amount > 0:

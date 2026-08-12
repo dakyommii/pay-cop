@@ -213,51 +213,62 @@ export default function PaymentPage() {
         </button>
       </form>
 
-      {result && (
-        <section style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 28 }}>
-          <div className="result-highlight">
-            <div className="result-headline">
-              {result.recommendedCard}
-              {result.recommendedPayment && ` + ${result.recommendedPayment}`}
+      {result && (() => {
+        const hasSaving = result.expectedSaving > 0;
+        return (
+          <section style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 28 }}>
+            {hasSaving ? (
+              <div className="result-highlight">
+                <div className="result-headline">
+                  {result.recommendedCard}
+                  {result.recommendedPayment && ` + ${result.recommendedPayment}`}
+                </div>
+                <div className="result-saving">예상 절약 {result.expectedSaving.toLocaleString()}원</div>
+              </div>
+            ) : (
+              <div className="result-neutral">
+                <div className="result-headline">받을 수 있는 혜택이 없어요</div>
+              </div>
+            )}
+
+            <div>
+              <h3 className="section-title" style={{ marginTop: 0 }}>추천 이유</h3>
+              <p style={{ fontSize: 14, lineHeight: 1.6 }}>{result.reason}</p>
             </div>
-            <div className="result-saving">예상 절약 {result.expectedSaving.toLocaleString()}원</div>
-          </div>
 
-          <div>
-            <h3 className="section-title" style={{ marginTop: 0 }}>추천 이유</h3>
-            <p style={{ fontSize: 14, lineHeight: 1.6 }}>{result.reason}</p>
-          </div>
-
-          <div>
-            <h3 className="section-title" style={{ marginTop: 0 }}>절약 금액 비교</h3>
-            <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-              {result.candidates.map((c, i) => {
-                const isTop = c.cardName === result.recommendedCard && c.paymentType === result.recommendedPayment;
-                const maxSaving = result.candidates[0]?.expectedSaving || 1;
-                const ratio = maxSaving > 0 ? Math.max(0, c.expectedSaving / maxSaving) : 0;
-                return (
-                  <li key={i} className={`candidate-row${isTop ? " candidate-row--top" : ""}`}>
-                    <div className="candidate-row-line">
-                      <span>
-                        {c.cardName}
-                        {c.paymentType && ` + ${c.paymentType}`}
-                        {!c.performanceMet && " (실적 미충족)"}
-                      </span>
-                      <strong>{c.expectedSaving.toLocaleString()}원</strong>
-                    </div>
-                    <div className="progress-track">
-                      <div
-                        className={`progress-fill${isTop ? "" : " progress-fill--accent"}`}
-                        style={{ width: `${ratio * 100}%` }}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
-      )}
+            {hasSaving && (
+              <div>
+                <h3 className="section-title" style={{ marginTop: 0 }}>절약 금액 비교</h3>
+                <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {result.candidates.map((c, i) => {
+                    const isTop = c.cardName === result.recommendedCard && c.paymentType === result.recommendedPayment;
+                    const maxSaving = result.candidates[0]?.expectedSaving || 1;
+                    const ratio = maxSaving > 0 ? Math.max(0, c.expectedSaving / maxSaving) : 0;
+                    return (
+                      <li key={i} className={`candidate-row${isTop ? " candidate-row--top" : ""}`}>
+                        <div className="candidate-row-line">
+                          <span>
+                            {c.cardName}
+                            {c.paymentType && ` + ${c.paymentType}`}
+                            {!c.performanceMet && " (실적 미충족)"}
+                          </span>
+                          <strong>{c.expectedSaving.toLocaleString()}원</strong>
+                        </div>
+                        <div className="progress-track">
+                          <div
+                            className={`progress-fill${isTop ? "" : " progress-fill--accent"}`}
+                            style={{ width: `${ratio * 100}%` }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </section>
+        );
+      })()}
     </main>
   );
 }

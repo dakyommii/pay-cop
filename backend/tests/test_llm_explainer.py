@@ -57,3 +57,18 @@ def test_fallback_omits_payment_sentence_when_no_event():
     top = make_candidate(payment_type="카카오페이", event_rate=0.0, event_amount=0, total_saving=4830)
     reason = _fallback_reason("올리브영", top)
     assert "카카오페이" not in reason
+
+
+def test_fallback_admits_no_benefit_when_total_saving_is_zero():
+    top = make_candidate(
+        card_name="신한카드 Deep Oil",
+        benefit_category=None,
+        benefit_rate=0.0,
+        discount_amount=0,
+        event_rate=0.0,
+        event_amount=0,
+        total_saving=0,
+    )
+    reason = _fallback_reason("스타벅스", top)
+    assert "혜택이 없습니다" in reason
+    assert "가장 유리합니다" not in reason

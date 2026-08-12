@@ -74,3 +74,28 @@ def test_recommend_pinned_scenario(client, payload, expected):
     assert body["recommendedCard"] == expected["card"]
     assert body["recommendedPayment"] == expected["payment"]
     assert body["expectedSaving"] == expected["saving"]
+
+
+def test_recommend_admits_no_benefit_instead_of_faking_one(client):
+    # 카드 등록 화면에서 구체적인 상품명(예: "신한카드 Deep Oil")을 고르면 이슈어 단위
+    # Benefit 카탈로그와 매칭되지 않는다 (의도된 동작 - docs/... cardCatalog.ts 참고).
+    # 매칭되는 매장/이벤트도 없는 경우, "이게 최선"인 척 포장하지 않고 혜택이 없다고
+    # 정직하게 답해야 한다.
+    resp = client.post(
+        "/payment/recommend",
+        json={
+            "merchant": "이마트",
+            "category": "마트",
+            "amount": 50000,
+            "cards": [
+                {"name": "신한카드 Deep Oil", "performance": 500000, "requiredPerformance": 300000}
+            ],
+            "payments": ["네이버페이"],
+        },
+    )
+    assert resp.status_code == 200
+
+    body = resp.json()
+    assert body["expectedSaving"] == 0
+    assert "혜택이 없습니다" in body["reason"]
+    assert "가장 유리합니다" not in body["reason"]
